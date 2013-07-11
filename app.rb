@@ -1,5 +1,6 @@
 require "sinatra"
 require "fastimage"
+require "mini_magick"
 
 class PlaceDalek
 
@@ -23,22 +24,35 @@ class PlaceDalek
   ##
   # Find a picture.
   def find_picture width, height
-    width, height = width.to_i, height.to_i
-    get_exact_match([width, height]).sample
+    picture = get_exact_match([width, height])
+
+    if picture.empty? then
+      picture = get_scaled_match [width, height], (width.to_f/height.to_f)
+    end
+
+    "./media/#{picture.sample.first}"
   end
 
   private
-  ##
-  # Should a file be ignored?
-  def ignore? item
-    ['.', '..'].include? item
-  end
+    ##
+    # Should a file be ignored?
+    def ignore? item
+      ['.', '..'].include? item
+    end
 
-  ##
-  # Get an exact match
-  def get_exact_match dim
-    @daleks.reject {|k,v| k != dim}.values
-  end
+    ##
+    # Get an exact match
+    def get_exact_match dim
+      @daleks.reject {|k,v| k != dim}.values
+    end
+
+    ##
+    # Get a scaled match
+    def get_scaled_match dim, scale
+      @daleks.reject do |k, v|
+        k != dim and (k[0].to_f/k[1].to_f) != scale
+      end.values
+    end
 end
 
 set :public_folder, PlaceDalek::Media
@@ -50,7 +64,20 @@ get "/" do
 end
 
 get '/:width/:height' do
-  image = dalek.find_picture(params[:width], params[:height])
-  return "<img src='/#{image[0]}'/>" unless image.nil?
-  return "I am sorry. There is no matching dalek."
+  width, height = params[:width].to_i, params[:height].to_i
+
+  image = dalek.find_picture(width, height)
+
+  resized = MiniMagick::Image.open(image)
+  resized.combine_options do |c|
+    c.filter 'box'
+    c.resize "#{width}x#{height}"
+  end
+  send_file(
+    resized.path,
+    {
+      filename: "dalek_#{width}_#{height}",
+      type: "image/#{FastImage.type("./media/#{image}")}"
+    }
+  )
 end
