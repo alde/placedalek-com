@@ -37,8 +37,7 @@ class Site < Sinatra::Base
     send_file(
       response_image.path,
       {
-        filename: "dalek_#{dim}",
-        type: "image/#{FastImage.type("./media/#{image}")}"
+        type: "image/#{FastImage.type(image)}"
       }
     )
   end
