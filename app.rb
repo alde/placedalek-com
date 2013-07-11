@@ -3,7 +3,6 @@ require "fastimage"
 require "mini_magick"
 require "./placedalek"
 require "slim"
-require "sass"
 
 class Site < Sinatra::Base
   set :public_folder, PlaceDalek::Media
