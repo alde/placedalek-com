@@ -43,5 +43,3 @@ class Site < Sinatra::Base
     )
   end
 end
-
-Site.run!
